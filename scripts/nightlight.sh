@@ -8,11 +8,15 @@ STATE_FILE="$BASE_DIR/state"
 TEMP_FILE="$BASE_DIR/temp"
 
 OFF_TEMP=6000
+DEFAULT_TEMP=4000
+STEP=250
+MIN_TEMP=2500
+MAX_TEMP=5000
 
 mkdir -p "$BASE_DIR"
 
 [ -f "$STATE_FILE" ] || echo "off" > "$STATE_FILE"
-[ -f "$TEMP_FILE" ] || echo "4000" > "$TEMP_FILE"
+[ -f "$TEMP_FILE" ] || echo "$DEFAULT_TEMP" > "$TEMP_FILE"
 
 ensure_hyprsunset_running() {
     if ! pgrep -x hyprsunset >/dev/null 2>&1; then
@@ -26,12 +30,14 @@ ensure_hyprsunset_running() {
     fi
 }
 
-restart_nightlight_waybar() {
+restart_waybar_module() {
+    pkill -RTMIN+8 waybar 2>/dev/null || true
+}
+
+restart_nightlighted_waybar() {
     if [ -f "$HOME/.config/waybar/config.jsonc" ] &&
        grep -q "custom/nightlight" "$HOME/.config/waybar/config.jsonc"; then
-        if command -v omarchy-restart-waybar >/dev/null 2>&1; then
-            omarchy-restart-waybar
-        fi
+        restart_waybar_module
     fi
 }
 
@@ -40,7 +46,44 @@ get_state() {
 }
 
 get_temp() {
-    cat "$TEMP_FILE" 2>/dev/null || echo "4000"
+    cat "$TEMP_FILE" 2>/dev/null || echo "$DEFAULT_TEMP"
+}
+
+set_temp() {
+    local temp="$1"
+
+    if [ "$temp" -lt "$MIN_TEMP" ]; then
+        temp="$MIN_TEMP"
+    fi
+
+    if [ "$temp" -gt "$MAX_TEMP" ]; then
+        temp="$MAX_TEMP"
+    fi
+
+    echo "$temp" > "$TEMP_FILE"
+}
+
+status() {
+    local state
+    local temp
+    local text
+    local tooltip
+    local class
+
+    state="$(get_state)"
+    temp="$(get_temp)"
+
+    if [ "$state" = "on" ]; then
+        text="󰖔 ${temp}K"
+        tooltip="Nightlight enabled - ${temp}K"
+        class="on"
+    else
+        text="󰖨"
+        tooltip="Nightlight disabled"
+        class="off"
+    fi
+
+    printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' "$text" "$tooltip" "$class"
 }
 
 turn_on() {
@@ -53,10 +96,10 @@ turn_on() {
     echo "on" > "$STATE_FILE"
 
     if command -v notify-send >/dev/null 2>&1; then
-        notify-send -u low "  Nightlight screen temperature" "${temp}K"
+        notify-send -u low " Nightlight screen temperature" "${temp}K"
     fi
 
-    restart_nightlight_waybar
+    restart_nightlighted_waybar
 }
 
 turn_off() {
@@ -66,10 +109,10 @@ turn_off() {
     echo "off" > "$STATE_FILE"
 
     if command -v notify-send >/dev/null 2>&1; then
-        notify-send -u low "  Daylight screen temperature" "${OFF_TEMP}K"
+        notify-send -u low " Daylight screen temperature" "${OFF_TEMP}K"
     fi
 
-    restart_nightlight_waybar
+    restart_nightlighted_waybar
 }
 
 apply_state() {
@@ -94,7 +137,39 @@ toggle_state() {
     fi
 }
 
+increase_temp() {
+    local temp
+    temp="$(get_temp)"
+    temp=$((temp + STEP))
+
+    set_temp "$temp"
+
+    if [ "$(get_state)" = "on" ]; then
+        apply_state
+    else
+        restart_nightlighted_waybar
+    fi
+}
+
+decrease_temp() {
+    local temp
+    temp="$(get_temp)"
+    temp=$((temp - STEP))
+
+    set_temp "$temp"
+
+    if [ "$(get_state)" = "on" ]; then
+        apply_state
+    else
+        restart_nightlighted_waybar
+    fi
+}
+
 case "$1" in
+    status)
+        status
+        ;;
+
     toggle)
         toggle_state
         ;;
@@ -111,8 +186,16 @@ case "$1" in
         turn_off
         ;;
 
+    up)
+        increase_temp
+        ;;
+
+    down)
+        decrease_temp
+        ;;
+
     *)
-        echo "Usage: $0 {toggle|apply|on|off}"
+        echo "Usage: $0 {status|toggle|apply|on|off|up|down}"
         exit 1
         ;;
 esac
