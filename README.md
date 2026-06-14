@@ -20,13 +20,14 @@ The interface is organized into simple panels:
 
 ```text
 Current Status | Actions
-               | Temperature Presets
+Visual Indicator | Temperature Presets
                | Configuration
 ```
 
 Main sections:
 
 * **Current Status**: shows whether night light is enabled, current temperature, schedule status, start time, and end time.
+* **Visual Indicator**: ASCII sun/moon with lenses that reflects the current state.
 * **Actions**: button to enable or disable night light.
 * **Temperature Presets**: dropdown with predefined temperature values.
 * **Configuration**: schedule toggle and time inputs.
@@ -129,6 +130,12 @@ Install the Python app with `pipx`:
 pipx install .
 ```
 
+Install configuration files, the control script, and the schedule timer:
+
+```bash
+nightlight-tui-install
+```
+
 Run the app:
 
 ```bash
@@ -163,6 +170,7 @@ Run the installer:
 
 ```bash
 ./install.sh
+nightlight-tui-install
 ```
 
 Run the app:
@@ -174,7 +182,7 @@ nightlight-tui
 Or run it directly with Python:
 
 ```bash
-python -m nightlight_tui.app
+python -m nightlight_tui
 ```
 
 ---
@@ -185,7 +193,16 @@ python -m nightlight_tui.app
 waybar-hyprsunset-tui/
 ├── nightlight_tui/
 │   ├── __init__.py
-│   └── app.py
+│   ├── __main__.py
+│   ├── app.py
+│   ├── config.py
+│   ├── storage.py
+│   ├── install_cmd.py
+│   ├── styles.tcss
+│   └── assets/
+│       ├── nightlight.sh
+│       ├── nightlight-schedule.service
+│       └── nightlight-schedule.timer
 ├── scripts/
 │   └── nightlight.sh
 ├── install.sh
@@ -198,11 +215,15 @@ waybar-hyprsunset-tui/
 File descriptions:
 
 ```text
-nightlight_tui/app.py      Main Textual TUI application.
-scripts/nightlight.sh      Control script that talks to hyprsunset.
-install.sh                 Installer for local configuration files.
-pyproject.toml             Python package configuration.
-README.md                  Project documentation.
+nightlight_tui/app.py          Textual TUI application.
+nightlight_tui/config.py       Shared paths, presets, and constants.
+nightlight_tui/storage.py      File I/O, validation, and script runner.
+nightlight_tui/install_cmd.py  Installs scripts, config, and systemd timer.
+nightlight_tui/styles.tcss     TUI stylesheet.
+scripts/nightlight.sh          Control script that talks to hyprsunset.
+install.sh                     Dependency checker and bootstrap installer.
+pyproject.toml                 Python package configuration.
+README.md                      Project documentation.
 ```
 
 ---
@@ -223,6 +244,7 @@ The following files are created automatically:
 ~/.config/waybar/nightlight/schedule_enabled
 ~/.config/waybar/nightlight/start
 ~/.config/waybar/nightlight/end
+~/.config/waybar/nightlight/constants.env
 ```
 
 Default values:
@@ -233,6 +255,16 @@ temp=4000
 schedule_enabled=off
 start=20:00
 end=07:00
+```
+
+Shared temperature limits used by both the TUI and `nightlight.sh`:
+
+```text
+MIN_TEMP=2500
+MAX_TEMP=6500
+DEFAULT_TEMP=4000
+OFF_TEMP=6000
+TEMP_STEP=250
 ```
 
 ---
@@ -261,55 +293,43 @@ This toggles night light on or off.
 
 This applies the current saved state.
 
----
+```bash
+~/.config/waybar/scripts/nightlight.sh schedule
+```
 
-## Example `nightlight.sh`
-
-The file `scripts/nightlight.sh` should use logic similar to this:
+This evaluates the saved schedule and turns night light on or off when needed.
 
 ```bash
-#!/usr/bin/env bash
-
-set -e
-
-BASE_DIR="$HOME/.config/waybar/nightlight"
-
-STATE_FILE="$BASE_DIR/state"
-TEMP_FILE="$BASE_DIR/temp"
-
-mkdir -p "$BASE_DIR"
-
-[ -f "$STATE_FILE" ] || echo "off" > "$STATE_FILE"
-[ -f "$TEMP_FILE" ] || echo "4000" > "$TEMP_FILE"
-
-STATE="$(cat "$STATE_FILE")"
-TEMP="$(cat "$TEMP_FILE")"
-
-case "$1" in
-  toggle)
-    if [ "$STATE" = "on" ]; then
-      hyprctl hyprsunset identity
-      echo "off" > "$STATE_FILE"
-    else
-      hyprctl hyprsunset temperature "$TEMP"
-      echo "on" > "$STATE_FILE"
-    fi
-    ;;
-
-  apply)
-    if [ "$STATE" = "on" ]; then
-      hyprctl hyprsunset temperature "$TEMP"
-    else
-      hyprctl hyprsunset identity
-    fi
-    ;;
-
-  *)
-    echo "Usage: $0 {toggle|apply}"
-    exit 1
-    ;;
-esac
+~/.config/waybar/scripts/nightlight.sh open-tui
 ```
+
+This opens the TUI from Waybar or another launcher.
+
+---
+
+## Automatic Schedule
+
+When schedule is enabled in the TUI, a user systemd timer checks the saved start/end times every minute and applies the correct state.
+
+Install or refresh the timer with:
+
+```bash
+nightlight-tui-install
+```
+
+Check timer status:
+
+```bash
+systemctl --user status nightlight-schedule.timer
+```
+
+Run a schedule check manually:
+
+```bash
+~/.config/waybar/scripts/nightlight.sh schedule
+```
+
+Overnight ranges such as `20:00` to `07:00` are supported.
 
 ---
 
@@ -534,16 +554,20 @@ Apply it manually:
 
 ### Schedule does not apply automatically
 
-The TUI can save schedule settings, but automatic scheduling requires a process to check the saved time values.
+Make sure the timer is installed and active:
 
-Possible options:
+```bash
+nightlight-tui-install
+systemctl --user status nightlight-schedule.timer
+```
 
-* A Waybar script running on an interval.
-* A systemd user timer.
-* A small background daemon.
-* Direct schedule handling inside `nightlight.sh`.
+You can also run a manual check:
 
-This depends on how your Waybar and Hyprland setup is configured.
+```bash
+~/.config/waybar/scripts/nightlight.sh schedule
+```
+
+Make sure schedule is enabled in the TUI and the start/end times are valid.
 
 ---
 
@@ -583,9 +607,13 @@ Remove the Python app installed with `pipx`:
 pipx uninstall waybar-hyprsunset-tui
 ```
 
-Remove configuration files:
+Remove configuration files and timer:
 
 ```bash
+systemctl --user disable --now nightlight-schedule.timer
+rm -f ~/.config/systemd/user/nightlight-schedule.service
+rm -f ~/.config/systemd/user/nightlight-schedule.timer
+systemctl --user daemon-reload
 rm -rf ~/.config/waybar/nightlight
 rm -f ~/.config/waybar/scripts/nightlight.sh
 ```
@@ -598,7 +626,6 @@ If you added a custom Waybar module, remove it from your Waybar configuration as
 
 Possible future improvements:
 
-* Add a background daemon for automatic scheduling.
 * Add direct Waybar status output.
 * Add configurable presets.
 * Add support for other backends such as `wlsunset` or `gammastep`.

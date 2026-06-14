@@ -86,45 +86,47 @@ else
 fi
 
 echo ""
-echo "Preparing configuration directories..."
+echo "Installing nightlight configuration..."
 
-mkdir -p "$SCRIPT_DIR"
-mkdir -p "$NIGHTLIGHT_DIR"
+if command -v nightlight-tui-install >/dev/null 2>&1; then
+    nightlight-tui-install
+elif python -m nightlight_tui.install_cmd 2>/dev/null; then
+    :
+else
+    echo "Using fallback installer from scripts/nightlight.sh..."
 
-echo "Directories ready:"
-echo "$SCRIPT_DIR"
-echo "$NIGHTLIGHT_DIR"
+    if [ ! -f "$NIGHTLIGHT_SCRIPT_SOURCE" ]; then
+        echo "Error: $NIGHTLIGHT_SCRIPT_SOURCE was not found."
+        echo "Please run this installer from the project root directory."
+        exit 1
+    fi
 
-echo ""
-echo "Installing control script..."
+    mkdir -p "$SCRIPT_DIR" "$NIGHTLIGHT_DIR"
 
-if [ ! -f "$NIGHTLIGHT_SCRIPT_SOURCE" ]; then
-    echo "Error: $NIGHTLIGHT_SCRIPT_SOURCE was not found."
-    echo "Please run this installer from the project root directory."
-    exit 1
+    cp "$NIGHTLIGHT_SCRIPT_SOURCE" "$NIGHTLIGHT_SCRIPT_TARGET"
+    chmod +x "$NIGHTLIGHT_SCRIPT_TARGET"
+
+    [ -f "$NIGHTLIGHT_DIR/state" ] || echo "off" > "$NIGHTLIGHT_DIR/state"
+    [ -f "$NIGHTLIGHT_DIR/temp" ] || echo "4000" > "$NIGHTLIGHT_DIR/temp"
+    [ -f "$NIGHTLIGHT_DIR/schedule_enabled" ] || echo "off" > "$NIGHTLIGHT_DIR/schedule_enabled"
+    [ -f "$NIGHTLIGHT_DIR/start" ] || echo "20:00" > "$NIGHTLIGHT_DIR/start"
+    [ -f "$NIGHTLIGHT_DIR/end" ] || echo "07:00" > "$NIGHTLIGHT_DIR/end"
+
+    cat > "$NIGHTLIGHT_DIR/constants.env" <<'EOF'
+MIN_TEMP=2500
+MAX_TEMP=6500
+DEFAULT_TEMP=4000
+OFF_TEMP=6000
+TEMP_STEP=250
+EOF
+
+    echo "Control script installed at:"
+    echo "$NIGHTLIGHT_SCRIPT_TARGET"
+    echo ""
+    echo "Install the Python package to enable the schedule timer:"
+    echo "  pipx install ."
+    echo "  nightlight-tui-install"
 fi
-
-cp "$NIGHTLIGHT_SCRIPT_SOURCE" "$NIGHTLIGHT_SCRIPT_TARGET"
-chmod +x "$NIGHTLIGHT_SCRIPT_TARGET"
-
-echo "Control script installed at:"
-echo "$NIGHTLIGHT_SCRIPT_TARGET"
-
-echo ""
-echo "Creating configuration files..."
-
-[ -f "$NIGHTLIGHT_DIR/state" ] || echo "off" > "$NIGHTLIGHT_DIR/state"
-[ -f "$NIGHTLIGHT_DIR/temp" ] || echo "4000" > "$NIGHTLIGHT_DIR/temp"
-[ -f "$NIGHTLIGHT_DIR/schedule_enabled" ] || echo "off" > "$NIGHTLIGHT_DIR/schedule_enabled"
-[ -f "$NIGHTLIGHT_DIR/start" ] || echo "20:00" > "$NIGHTLIGHT_DIR/start"
-[ -f "$NIGHTLIGHT_DIR/end" ] || echo "07:00" > "$NIGHTLIGHT_DIR/end"
-
-echo "Configuration files created/verified:"
-echo "$NIGHTLIGHT_DIR/state"
-echo "$NIGHTLIGHT_DIR/temp"
-echo "$NIGHTLIGHT_DIR/schedule_enabled"
-echo "$NIGHTLIGHT_DIR/start"
-echo "$NIGHTLIGHT_DIR/end"
 
 echo ""
 echo "======================================"
@@ -132,7 +134,7 @@ echo "Base installation complete."
 echo "======================================"
 echo ""
 
-echo "Now install the Python app with:"
+echo "Install or update the Python app with:"
 echo ""
 echo "pipx install ."
 echo ""

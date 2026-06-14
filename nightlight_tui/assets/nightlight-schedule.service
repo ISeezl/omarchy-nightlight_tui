@@ -1,0 +1,6 @@
+[Unit]
+Description=Apply nightlight schedule
+
+[Service]
+Type=oneshot
+ExecStart=__NIGHTLIGHT_SCRIPT__ schedule
