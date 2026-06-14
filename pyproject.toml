@@ -1,0 +1,16 @@
+[project]
+name = "waybar-hyprsunset-tui"
+version = "0.1.0"
+description = "TUI para controlar hyprsunset desde Waybar/Hyprland"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "textual>=0.80.0"
+]
+
+[project.scripts]
+nightlight-tui = "nightlight_tui.app:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
