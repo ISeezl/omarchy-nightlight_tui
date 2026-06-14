@@ -74,12 +74,12 @@ status() {
     temp="$(get_temp)"
 
     if [ "$state" = "on" ]; then
-        text="󰖔 ${temp}K"
-        tooltip="Nightlight enabled - ${temp}K"
+        text="󰖔"
+        tooltip="Nightlight enabled - ${temp}K\nLeft click: disable\nRight click: open settings\nScroll: adjust temperature"
         class="on"
     else
         text="󰖨"
-        tooltip="Nightlight disabled"
+        tooltip="Nightlight disabled\nLeft click: enable\nRight click: open settings\nScroll: adjust temperature"
         class="off"
     fi
 
@@ -95,10 +95,6 @@ turn_on() {
 
     echo "on" > "$STATE_FILE"
 
-    if command -v notify-send >/dev/null 2>&1; then
-        notify-send -u low " Nightlight screen temperature" "${temp}K"
-    fi
-
     restart_nightlighted_waybar
 }
 
@@ -107,10 +103,6 @@ turn_off() {
     hyprctl hyprsunset temperature "$OFF_TEMP"
 
     echo "off" > "$STATE_FILE"
-
-    if command -v notify-send >/dev/null 2>&1; then
-        notify-send -u low " Daylight screen temperature" "${OFF_TEMP}K"
-    fi
 
     restart_nightlighted_waybar
 }
