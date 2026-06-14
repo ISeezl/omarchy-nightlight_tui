@@ -68,7 +68,7 @@ Screen {
 
 #ascii-panel {
     height: auto;
-    margin-top: 1;
+    margin-top: 0;
 }
 
 #ascii-art {
