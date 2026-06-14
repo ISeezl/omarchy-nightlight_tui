@@ -14,7 +14,7 @@ Screen {
     text-style: bold;
     color: #ffafd7;
     border: round #8a5cf6;
-    margin-bottom: 1;
+    margin-bottom: 0;
 }
 
 .panel {
