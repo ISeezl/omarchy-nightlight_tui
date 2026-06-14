@@ -105,29 +105,17 @@ Then restart your Hyprland session.
 
 ## Installation
 
-Clone the repository:
+Install directly from GitHub with `pipx`:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/waybar-hyprsunset-tui.git
-cd waybar-hyprsunset-tui
+pipx install "git+https://github.com/ISeezl/omarchy-nightlight_tui.git"
 ```
 
-Make the installer executable:
+If you already installed an older version, remove it first and install again:
 
 ```bash
-chmod +x install.sh
-```
-
-Run the installer:
-
-```bash
-./install.sh
-```
-
-Install the Python app with `pipx`:
-
-```bash
-pipx install .
+pipx uninstall waybar-hyprsunset-tui
+pipx install "git+https://github.com/ISeezl/omarchy-nightlight_tui.git"
 ```
 
 Install configuration files, the control script, and the schedule timer:
@@ -144,13 +132,30 @@ nightlight-tui
 
 ---
 
+## Local Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/ISeezl/omarchy-nightlight_tui.git
+cd omarchy-nightlight_tui
+```
+
+Run the installer:
+
+```bash
+./install.sh
+```
+
+---
+
 ## Development Installation
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/waybar-hyprsunset-tui.git
-cd waybar-hyprsunset-tui
+git clone https://github.com/ISeezl/omarchy-nightlight_tui.git
+cd omarchy-nightlight_tui
 ```
 
 Create a virtual environment:

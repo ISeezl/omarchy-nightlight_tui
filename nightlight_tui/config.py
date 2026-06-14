@@ -36,24 +36,28 @@ PRESET_OPTIONS: list[tuple[str, str]] = [
 PRESET_TEMPS = [int(value) for _, value in PRESET_OPTIONS]
 
 ASCII_SUN_LENS = """
-    \\   |   /
-  .-- [☀] --.
- /     |     \\
-      (___)
-  ┌───────────┐
-  │  ○     ○  │
-  └───────────┘
-  Luz diurna"""
+        \\  |  /
+     .---.☀.---.
+   .'     |     '.
+  /   ___     ___ \\
+ |   /   \\___/   |
+ |  |   ○     ○  |
+  \\  \\___/‾\\___/ /
+   '.     |     .'
+     '---._.---'
+       Luz diurna"""
 
 ASCII_MOON_LENS = """
-      .-----.
-    ,'   ☾   `.
-   /    ___    \\
-       (   )
-  ┌───────────┐
-  │  ◐     ◑  │
-  └───────────┘
-  Luz nocturna"""
+        .     *
+     .---.☾.---.
+   .'   .   .   '.
+  /   ___     ___ \\
+ |   /   \\___/   |
+ |  |   ◐     ◑  |
+  \\  \\___/‾\\___/ /
+   '.   *   .  .'
+     '---._.---'
+      Luz nocturna"""
 
 CSS_PATH = Path(__file__).with_name("styles.tcss")
 
