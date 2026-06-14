@@ -382,30 +382,37 @@ Preset shortcuts:
 
 ## Waybar Integration
 
-You can add a custom Waybar module to open the TUI.
+You can add a custom Waybar module to show the current state, toggle night light,
+open the TUI, and adjust temperature with the mouse wheel.
 
 Example:
 
-```json
+```jsonc
 "custom/nightlight": {
-  "format": "󰖔",
-  "tooltip": true,
-  "on-click": "kitty -e nightlight-tui"
+  "exec": "~/.config/waybar/scripts/nightlight.sh status",
+  "return-type": "json",
+  "interval": "once",
+  "signal": 8,
+  "format": "{}",
+  "on-click": "~/.config/waybar/scripts/nightlight.sh toggle",
+  "on-click-right": "hyprctl dispatch exec \"[float; center; size 600 580] alacritty -e nightlight-tui\"",
+  "on-scroll-up": "~/.config/waybar/scripts/nightlight.sh up",
+  "on-scroll-down": "~/.config/waybar/scripts/nightlight.sh down"
 }
 ```
 
-If you use another terminal, replace `kitty`.
+If you use another terminal, replace `alacritty` in `on-click-right`.
 
 For Alacritty:
 
-```json
-"on-click": "alacritty -e nightlight-tui"
+```jsonc
+"on-click-right": "hyprctl dispatch exec \"[float; center; size 600 580] alacritty -e nightlight-tui\""
 ```
 
 For Foot:
 
-```json
-"on-click": "foot -e nightlight-tui"
+```jsonc
+"on-click-right": "hyprctl dispatch exec \"[float; center; size 600 580] foot -e nightlight-tui\""
 ```
 
 Then add the module to your Waybar modules list:
